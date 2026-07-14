@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { RECITERS } from "@/data/surahs";
-import { loadProfile, profileIsStale, type VoiceProfile } from "@/lib/profile/store";
+import { profileIsStale } from "@/lib/profile/store";
+import { useVoiceProfile } from "./useVoiceProfile";
 import RecordStep from "./RecordStep";
 import AnalysisProgress from "./AnalysisProgress";
 import ReciterCard from "./ReciterCard";
@@ -21,12 +22,12 @@ import styles from "./match.module.css";
 /** Read by /practice to preselect the matched reciter. */
 const MATCHED_RECITER_KEY = "recitation-coach:matched-reciter";
 
-type Phase = "loading" | "no-profile" | "record" | "analysing" | "results";
+type Step = "record" | "analysing" | "results";
 
 export default function MatchPage() {
   const router = useRouter();
-  const [phase, setPhase] = useState<Phase>("loading");
-  const [profile, setProfile] = useState<VoiceProfile | null>(null);
+  const profile = useVoiceProfile();
+  const [step, setStep] = useState<Step>("record");
 
   const [readings, setReadings] = useState<CentsSample[]>([]);
   const [userAudioUrl, setUserAudioUrl] = useState<string | null>(null);
@@ -38,12 +39,6 @@ export default function MatchPage() {
   );
 
   const [blend, setBlend] = useState(0.5);
-
-  useEffect(() => {
-    const p = loadProfile();
-    setProfile(p);
-    setPhase(p ? "record" : "no-profile");
-  }, []);
 
   // Revoke the object URL for the user's own take when it's replaced/unmounted.
   useEffect(() => {
@@ -58,14 +53,14 @@ export default function MatchPage() {
       if (prev) URL.revokeObjectURL(prev);
       return blob ? URL.createObjectURL(blob) : null;
     });
-    setPhase("analysing");
+    setStep("analysing");
     setAnalysisError(null);
     setProgress(null);
 
     computeReciterFeatures((p) => setProgress(p))
       .then((set) => {
         setReciterFeatures(set.reciters);
-        setPhase("results");
+        setStep("results");
       })
       .catch((e: unknown) => {
         setAnalysisError(
@@ -127,7 +122,7 @@ export default function MatchPage() {
         never grading.
       </p>
 
-      {phase === "no-profile" && (
+      {profile === null && (
         <div className="card">
           <p>
             <strong>No voice profile yet.</strong> The match engine needs
@@ -142,7 +137,7 @@ export default function MatchPage() {
         </div>
       )}
 
-      {phase === "record" && profile && (
+      {profile && step === "record" && (
         <>
           {profileIsStale(profile) && (
             <p style={{ color: "var(--red)", marginBottom: "0.75rem" }}>
@@ -155,13 +150,13 @@ export default function MatchPage() {
         </>
       )}
 
-      {phase === "analysing" && (
+      {profile && step === "analysing" && (
         <>
           <AnalysisProgress progress={progress} />
           {analysisError && (
             <div className={styles.errorBox}>
               <p>{analysisError}</p>
-              <button className="ghost" onClick={() => setPhase("record")}>
+              <button className="ghost" onClick={() => setStep("record")}>
                 Back
               </button>
             </div>
@@ -169,7 +164,7 @@ export default function MatchPage() {
         </>
       )}
 
-      {phase === "results" && profile && userStyle && ranked && (
+      {profile && step === "results" && userStyle && ranked && (
         <>
           <div className="card">
             <label className={styles.blendLabel} htmlFor="blend-slider">
