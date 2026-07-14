@@ -46,6 +46,9 @@ export default function Home() {
                 <Link href="/practice">
                   <button className="primary">Practice →</button>
                 </Link>{" "}
+                <Link href="/match">
+                  <button className="ghost">Find my reciter →</button>
+                </Link>{" "}
                 <Link href="/calibrate">
                   <button className="ghost">Re-calibrate</button>
                 </Link>

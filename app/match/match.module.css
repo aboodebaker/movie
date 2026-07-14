@@ -1,0 +1,164 @@
+.errorBox {
+  background: rgba(224, 108, 95, 0.12);
+  border: 1px solid var(--red);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin: 0.9rem 0;
+}
+
+.errorBox p {
+  margin-bottom: 0.5rem;
+}
+
+.liveStatus {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  min-height: 1.3em;
+  margin: 0.75rem 0;
+}
+
+.controls {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.levelRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.levelLabel {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  width: 4.5rem;
+  flex-shrink: 0;
+}
+
+.levelTrack {
+  flex: 1;
+  height: 0.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.levelFill {
+  height: 100%;
+  background: var(--green);
+  transition: width 90ms linear;
+}
+
+/* Blend slider */
+
+.blendLabel {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin-bottom: 0.4rem;
+}
+
+.blendLabel + input[type="range"] {
+  width: 100%;
+}
+
+/* Result cards */
+
+.reciterCard {
+  transition: opacity 150ms ease;
+}
+
+.failedCard {
+  opacity: 0.55;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.rank {
+  font-size: 0.9rem;
+  font-weight: 650;
+  color: var(--gold);
+  min-width: 1.8rem;
+}
+
+.reciterName {
+  margin: 0;
+  flex: 1;
+}
+
+.overallPct {
+  font-size: 1.2rem;
+  font-weight: 650;
+  color: var(--gold);
+}
+
+.failedLabel {
+  color: var(--red);
+  font-size: 0.85rem;
+  margin: 0.3rem 0 0.6rem;
+}
+
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0.75rem 0;
+}
+
+.barRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.barLabel {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  width: 8.5rem;
+  flex-shrink: 0;
+}
+
+.barNote {
+  font-style: italic;
+}
+
+.barTrack {
+  flex: 1;
+  height: 0.55rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 200ms ease;
+}
+
+.explain {
+  font-size: 0.92rem;
+  color: var(--text);
+  margin: 0.6rem 0;
+}
+
+.cardControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+@media (max-width: 520px) {
+  .barLabel {
+    width: 6rem;
+  }
+}

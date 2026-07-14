@@ -19,6 +19,7 @@ export default function RootLayout({
             Recitation Coach
           </Link>
           <Link href="/calibrate">Calibrate</Link>
+          <Link href="/match">Match</Link>
           <Link href="/practice">Practice</Link>
         </nav>
         <main>{children}</main>
