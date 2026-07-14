@@ -1,0 +1,180 @@
+.stepIndicator {
+  display: flex;
+  gap: 0.6rem;
+  margin: 0.75rem 0 0.25rem;
+}
+
+.stepDot,
+.stepDotActive,
+.stepDotDone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+
+.stepDotActive {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.stepDotDone {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.arabicBlock {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin: 0.9rem 0;
+}
+
+.arabicBlock p {
+  margin: 0.15rem 0;
+}
+
+.errorBox {
+  background: rgba(224, 108, 95, 0.12);
+  border: 1px solid var(--red);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin: 0.9rem 0;
+}
+
+.errorBox p {
+  margin-bottom: 0.5rem;
+}
+
+.liveStatus {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  min-height: 1.3em;
+  margin: 0.75rem 0;
+}
+
+.controls {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+/* Pitch + level meter */
+
+.meter {
+  margin-top: 0.75rem;
+}
+
+.pitchTrack {
+  position: relative;
+  height: 2.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.pitchTrackFill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(91, 141, 239, 0.08),
+    rgba(217, 164, 65, 0.14),
+    rgba(91, 141, 239, 0.08)
+  );
+}
+
+.pitchDot {
+  position: absolute;
+  top: 50%;
+  width: 0.9rem;
+  height: 0.9rem;
+  margin-left: -0.45rem;
+  margin-top: -0.45rem;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 8px rgba(217, 164, 65, 0.7);
+  transition: left 70ms linear;
+}
+
+.pitchHint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.levelRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.levelLabel {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  width: 4.5rem;
+  flex-shrink: 0;
+}
+
+.levelTrack {
+  flex: 1;
+  height: 0.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.levelFill {
+  height: 100%;
+  background: var(--green);
+  transition: width 90ms linear;
+}
+
+/* Results */
+
+.resultsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.statTile {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.statLabel {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.statValue {
+  font-size: 1.4rem;
+  font-weight: 650;
+  color: var(--gold);
+  margin-top: 0.2rem;
+}
+
+@media (max-width: 520px) {
+  .resultsGrid {
+    grid-template-columns: 1fr;
+  }
+}
