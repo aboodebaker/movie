@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { RECITERS } from "@/data/surahs";
+import { MATCH_RECITERS as RECITERS } from "@/data/surahs";
 import { profileIsStale } from "@/lib/profile/store";
 import { useVoiceProfile } from "./useVoiceProfile";
 import RecordStep from "./RecordStep";

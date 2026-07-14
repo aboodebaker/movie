@@ -13,7 +13,7 @@ const PLAYHEAD_FRAC = 0.3;
 const WINDOW_SEC = 6;
 const BEHIND_SEC = WINDOW_SEC * PLAYHEAD_FRAC;
 const AHEAD_SEC = WINDOW_SEC * (1 - PLAYHEAD_FRAC);
-const CANVAS_HEIGHT = 260;
+const CANVAS_HEIGHT = 320;
 const TRAIL_MAX_AGE = BEHIND_SEC + 0.2;
 
 interface TrailPoint {
@@ -164,29 +164,33 @@ export default function PracticeLane({
       const span = Math.max(1, yHigh - yLow);
       const centsToY = (c: number) => h - ((c - yLow) / span) * h;
 
-      // --- guide lines (user's low/mid/high) ---
-      ctx2d.font = "11px system-ui, sans-serif";
+      // --- comfortable band (shaded) instead of three cramped guide lines:
+      // with a narrow voice profile the low/mid/high labels overlap and read
+      // as noise. One soft band + a mid line stays legible at any size.
+      const bandTop = centsToY(userAnchors.high);
+      const bandBottom = centsToY(userAnchors.low);
+      ctx2d.fillStyle = colors.border;
+      ctx2d.globalAlpha = 0.22;
+      ctx2d.fillRect(0, bandTop, w, Math.max(2, bandBottom - bandTop));
+      ctx2d.globalAlpha = 1;
+
+      ctx2d.font = "12px system-ui, sans-serif";
       ctx2d.textBaseline = "middle";
-      const guides: [number, string][] = [
-        [userAnchors.low, "low"],
-        [userAnchors.mid, "mid"],
-        [userAnchors.high, "high"],
-      ];
-      for (const [c, label] of guides) {
-        const y = centsToY(c);
-        ctx2d.strokeStyle = colors.border;
-        ctx2d.globalAlpha = 0.7;
-        ctx2d.lineWidth = 1;
-        ctx2d.setLineDash([4, 4]);
-        ctx2d.beginPath();
-        ctx2d.moveTo(0, y);
-        ctx2d.lineTo(w, y);
-        ctx2d.stroke();
-        ctx2d.setLineDash([]);
-        ctx2d.globalAlpha = 1;
-        ctx2d.fillStyle = colors.textDim;
-        ctx2d.fillText(label, 4, y - 6);
-      }
+      const midY = centsToY(userAnchors.mid);
+      ctx2d.strokeStyle = colors.border;
+      ctx2d.globalAlpha = 0.8;
+      ctx2d.lineWidth = 1;
+      ctx2d.setLineDash([4, 4]);
+      ctx2d.beginPath();
+      ctx2d.moveTo(0, midY);
+      ctx2d.lineTo(w, midY);
+      ctx2d.stroke();
+      ctx2d.setLineDash([]);
+      ctx2d.globalAlpha = 1;
+      ctx2d.fillStyle = colors.textDim;
+      ctx2d.fillText("your middle", 6, Math.min(Math.max(midY - 9, 10), h - 10));
+      ctx2d.fillText("higher ↑", 6, 14);
+      ctx2d.fillText("lower ↓", 6, h - 12);
 
       // --- playhead ---
       ctx2d.strokeStyle = colors.textDim;
@@ -217,7 +221,7 @@ export default function PracticeLane({
           if (Math.abs(c2 - c1) > 300) continue;
           const ahead = (t1 + t2) / 2 >= tSec;
           ctx2d.strokeStyle = `rgba(${gr}, ${gg}, ${gb}, ${ahead ? 0.95 : 0.35})`;
-          ctx2d.lineWidth = ahead ? 3 : 1.5;
+          ctx2d.lineWidth = ahead ? 4.5 : 2;
           ctx2d.beginPath();
           ctx2d.moveTo(timeToX(t1), centsToY(mapReciterToUser(c1, reciterAnchors, userAnchors)));
           ctx2d.lineTo(timeToX(t2), centsToY(mapReciterToUser(c2, reciterAnchors, userAnchors)));
@@ -287,16 +291,41 @@ export default function PracticeLane({
         ctx2d.fillStyle = errorColor(err, colors);
         ctx2d.globalAlpha = alpha;
         ctx2d.beginPath();
-        ctx2d.arc(timeToX(p.t), centsToY(p.cents), 2.5, 0, Math.PI * 2);
+        ctx2d.arc(timeToX(p.t), centsToY(p.cents), 3.5, 0, Math.PI * 2);
         ctx2d.fill();
       }
       ctx2d.globalAlpha = 1;
+
+      // --- "you vs him" readout at the playhead ---
+      // Gold ring = where HIS voice sits right now (in your range);
+      // filled dot = where YOUR voice is; the connector shows the gap.
+      if (targetC !== null) {
+        const ty = centsToY(targetC);
+        if (userC !== null) {
+          const uy = centsToY(userC);
+          ctx2d.strokeStyle = errorColor(errorCents, colors);
+          ctx2d.globalAlpha = 0.6;
+          ctx2d.lineWidth = 2.5;
+          ctx2d.setLineDash([3, 3]);
+          ctx2d.beginPath();
+          ctx2d.moveTo(playheadX, uy);
+          ctx2d.lineTo(playheadX, ty);
+          ctx2d.stroke();
+          ctx2d.setLineDash([]);
+          ctx2d.globalAlpha = 1;
+        }
+        ctx2d.strokeStyle = colors.gold;
+        ctx2d.lineWidth = 3;
+        ctx2d.beginPath();
+        ctx2d.arc(playheadX, ty, 8, 0, Math.PI * 2);
+        ctx2d.stroke();
+      }
 
       // --- live dot at the playhead ---
       if (userC !== null) {
         ctx2d.fillStyle = errorColor(errorCents, colors);
         ctx2d.beginPath();
-        ctx2d.arc(playheadX, centsToY(userC), 6, 0, Math.PI * 2);
+        ctx2d.arc(playheadX, centsToY(userC), 9, 0, Math.PI * 2);
         ctx2d.fill();
       }
     };

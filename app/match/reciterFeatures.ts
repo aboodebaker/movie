@@ -8,7 +8,7 @@
  * few dozen network fetches + client-side pitch tracking, not something to
  * redo on every visit.
  */
-import { RECITERS, SURAHS, ayahAudioUrl } from "@/data/surahs";
+import { MATCH_RECITERS as RECITERS, SURAHS, ayahAudioUrl } from "@/data/surahs";
 import { extractContour } from "@/lib/contour/extract";
 import { computeAnchors, percentile, type Anchors } from "@/lib/pitch/cents";
 import { StyleAccumulator, resampleContour, type StyleVector } from "./styleVector";

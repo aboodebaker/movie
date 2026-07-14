@@ -446,6 +446,11 @@ export default function PracticePage() {
                   onCueChange={setCueId}
                 />
               </div>
+              <p className="muted" style={{ fontSize: "0.85rem", margin: "0.35rem 0 0" }}>
+                <span style={{ color: "var(--gold)" }}>◯ gold ring</span> = his level in your
+                range · <span style={{ color: "var(--green)" }}>● dot</span> = your voice —
+                bring the dot into the ring.
+              </p>
 
               <div className={`${styles.cueBanner} ${cueClass}`}>{cueLabel}</div>
 

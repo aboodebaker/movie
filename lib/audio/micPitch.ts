@@ -20,10 +20,17 @@ export interface PitchReading {
 export interface MicPitchTracker {
   stop: () => void;
   sampleRate: number;
+  /** The live mic stream — share this with MediaRecorder instead of opening
+   *  a second getUserMedia (phones often silence the first stream when a
+   *  second one grabs the mic). */
+  stream: MediaStream;
 }
 
 const FRAME_SIZE = 2048; // ~46 ms at 44.1 kHz — inside the <100 ms budget
-const CLARITY_THRESHOLD = 0.88;
+// Phone mics are quiet and recitation is melodic, not clean speech — keep
+// these permissive or real voices read as "unvoiced".
+const CLARITY_THRESHOLD = 0.8;
+const MIN_LEVEL = 0.0025;
 const MIN_HZ = 60;
 const MAX_HZ = 800;
 
@@ -37,14 +44,22 @@ const MAX_HZ = 800;
  */
 export async function startMicPitch(
   onReading: (r: PitchReading) => void,
+  existingStream?: MediaStream,
 ): Promise<MicPitchTracker> {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: {
-      echoCancellation: false,
-      noiseSuppression: false,
-      autoGainControl: false,
-    },
-  });
+  // echoCancellation ON is essential in shadow mode: without it the mic
+  // hears the reciter's playback from the phone speaker and the detector
+  // tracks *his* pitch instead of the user's. autoGainControl helps quiet
+  // phone mics clear the level threshold; noiseSuppression stays off since
+  // it can distort sustained melodic tones.
+  const stream =
+    existingStream ??
+    (await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: false,
+        autoGainControl: true,
+      },
+    }));
 
   const ctx = new AudioContext();
   await ctx.resume();
@@ -69,7 +84,7 @@ export async function startMicPitch(
 
     const [hz, clarity] = detector.findPitch(buf, ctx.sampleRate);
     const voiced =
-      clarity >= CLARITY_THRESHOLD && hz >= MIN_HZ && hz <= MAX_HZ && level > 0.005;
+      clarity >= CLARITY_THRESHOLD && hz >= MIN_HZ && hz <= MAX_HZ && level > MIN_LEVEL;
 
     onReading({
       tMs: performance.now() - t0,
@@ -84,11 +99,14 @@ export async function startMicPitch(
 
   return {
     sampleRate: ctx.sampleRate,
+    stream,
     stop: () => {
       stopped = true;
       cancelAnimationFrame(rafId);
       source.disconnect();
-      stream.getTracks().forEach((t) => t.stop());
+      // A caller-supplied stream stays alive (they own it — e.g. a
+      // MediaRecorder may still be writing from it).
+      if (!existingStream) stream.getTracks().forEach((t) => t.stop());
       void ctx.close();
     },
   };

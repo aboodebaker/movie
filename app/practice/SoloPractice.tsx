@@ -5,6 +5,7 @@ import type { Anchors } from "@/lib/pitch/cents";
 import { startMicPitch, type MicPitchTracker, type PitchReading } from "@/lib/audio/micPitch";
 import type { ClipData } from "./contourCache";
 import PracticeLane, { type PlaybackStats } from "./PracticeLane";
+import MicLiveCheck from "./MicLiveCheck";
 import SoloReview from "./SoloReview";
 import { buildSoloReview, type PitchSample, type SoloReviewOutcome } from "./soloAlign";
 import styles from "./practice.module.css";
@@ -99,8 +100,8 @@ export default function SoloPractice({ clipData, userAnchors, wobble, onShadowTh
       clearTimeout(autoStopTimerRef.current);
       autoStopTimerRef.current = null;
     }
-    micTrackerRef.current?.stop();
-    micTrackerRef.current = null;
+    // Stop the recorder before the tracker: they share one stream, and the
+    // tracker's stop() ends the tracks — the recorder must flush first.
     try {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
         mediaRecorderRef.current.stop();
@@ -108,6 +109,8 @@ export default function SoloPractice({ clipData, userAnchors, wobble, onShadowTh
     } catch {
       // already stopped
     }
+    micTrackerRef.current?.stop();
+    micTrackerRef.current = null;
     recordStreamRef.current?.getTracks().forEach((t) => t.stop());
     recordStreamRef.current = null;
 
@@ -118,15 +121,23 @@ export default function SoloPractice({ clipData, userAnchors, wobble, onShadowTh
 
   const beginRecording = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      recordStreamRef.current = stream;
+      // One mic stream for both pitch tracking and the MediaRecorder — a
+      // second getUserMedia grab silences the first stream on many phones,
+      // which made every take come back "unvoiced".
+      recordingStartRef.current = performance.now();
+      const tracker = await startMicPitch((r) => {
+        micReadingRef.current = r;
+        pitchTimelineRef.current.push({ tMs: performance.now() - recordingStartRef.current, cents: r.cents });
+      });
+      micTrackerRef.current = tracker;
+      recordStreamRef.current = tracker.stream;
 
       const mimeCandidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
       const mimeType =
         typeof MediaRecorder !== "undefined"
           ? mimeCandidates.find((m) => MediaRecorder.isTypeSupported?.(m))
           : undefined;
-      const mr = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      const mr = new MediaRecorder(tracker.stream, mimeType ? { mimeType } : undefined);
       mediaRecorderRef.current = mr;
       chunksRef.current = [];
       mr.ondataavailable = (e) => {
@@ -138,15 +149,7 @@ export default function SoloPractice({ clipData, userAnchors, wobble, onShadowTh
         takeBlobUrlRef.current = url;
         setTakeBlobUrl(url);
       };
-
-      recordingStartRef.current = performance.now();
       mr.start();
-
-      const tracker = await startMicPitch((r) => {
-        micReadingRef.current = r;
-        pitchTimelineRef.current.push({ tMs: performance.now() - recordingStartRef.current, cents: r.cents });
-      });
-      micTrackerRef.current = tracker;
 
       isRecordingRef.current = true;
       setPhase("recording");
@@ -226,7 +229,7 @@ export default function SoloPractice({ clipData, userAnchors, wobble, onShadowTh
             <button className="primary" onClick={stopTake}>
               Stop
             </button>
-            <span className="muted">Recording — reciting alone, no reference playback.</span>
+            <MicLiveCheck micReadingRef={micReadingRef} />
           </div>
         </>
       )}

@@ -101,14 +101,14 @@
 
 .cueBanner {
   margin: 0.75rem 0;
-  padding: 0.85rem 1rem;
+  padding: 1rem 1rem;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--bg-raised);
   text-align: center;
-  font-size: 1.15rem;
-  font-weight: 600;
-  min-height: 1.6em;
+  font-size: 1.45rem;
+  font-weight: 650;
+  min-height: 1.5em;
   color: var(--text-dim);
 }
 
