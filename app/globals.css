@@ -1,0 +1,119 @@
+:root {
+  --bg: #0e1116;
+  --bg-raised: #171c24;
+  --border: #2a3240;
+  --text: #e8ecf2;
+  --text-dim: #97a3b4;
+  --gold: #d9a441;
+  --green: #4fc38a;
+  --red: #e06c5f;
+  --accent: #5b8def;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.55;
+  min-height: 100%;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+main {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 4rem;
+}
+
+.site-nav {
+  display: flex;
+  gap: 1.25rem;
+  align-items: baseline;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--border);
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.site-nav .brand {
+  font-weight: 650;
+  color: var(--gold);
+}
+
+.site-nav a {
+  color: var(--text-dim);
+}
+
+.site-nav a:hover {
+  color: var(--text);
+}
+
+.card {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin: 1rem 0;
+}
+
+button.primary {
+  background: var(--gold);
+  color: #14100a;
+  border: none;
+  border-radius: 8px;
+  padding: 0.65rem 1.3rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button.primary:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+button.ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.muted {
+  color: var(--text-dim);
+}
+
+.arabic {
+  font-family: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
+  direction: rtl;
+  font-size: 1.9rem;
+  line-height: 2.3;
+}
+
+select,
+input[type="range"] {
+  accent-color: var(--gold);
+}
+
+select {
+  background: var(--bg-raised);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.95rem;
+}
