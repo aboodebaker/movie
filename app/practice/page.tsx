@@ -9,6 +9,7 @@ import { startMicPitch, type MicPitchTracker, type PitchReading } from "@/lib/au
 import { CUE_TEXT, type CueId } from "@/lib/cues/engine";
 import { loadClip, type ClipData } from "./contourCache";
 import PracticeLane, { type PlaybackStats } from "./PracticeLane";
+import WordStrip from "./WordStrip";
 import styles from "./practice.module.css";
 
 type ClipStatus = "idle" | "loading" | "ready" | "error";
@@ -351,7 +352,13 @@ export default function PracticePage() {
             <p className="muted" style={{ fontSize: "0.85rem", marginBottom: "0.4rem" }}>
               {currentReciter.name} · {currentSurah.name} {currentSurah.arabicName}
             </p>
-            <p className="arabic">{currentAyah.arabic}</p>
+            <WordStrip
+              words={clipData?.words ?? null}
+              fallbackArabic={currentAyah.arabic}
+              getPlaybackTimeSec={getPlaybackTimeSec}
+              isPlayingRef={isPlayingRef}
+              resetSignal={resetSignal}
+            />
             {usingExploreAnchors && (
               <p className="muted" style={{ fontSize: "0.8rem", marginTop: "0.5rem" }}>
                 Exploring with {currentReciter.name}&apos;s own range (no voice profile

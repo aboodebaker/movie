@@ -7,14 +7,36 @@ export interface Reciter {
   /** EveryAyah folder name */
   id: string;
   name: string;
+  /**
+   * Quran.com v4 `recitations` resource id for the same reciter/style, used
+   * to fetch word-level timing segments (see lib/segments/server.ts). Omit
+   * when no matching recitation has verified word segments — the segments
+   * API then 404s cleanly and the practice screen falls back to whole-ayah
+   * highlighting from the EveryAyah clip.
+   *
+   * Verified 2026-07-14 against GET /api/v4/resources/recitations and
+   * GET /api/v4/recitations/{id}/by_ayah/{s}:{a}?fields=segments (1:1, 1:2,
+   * ..., 1:7, 112:1..4): all four ids below return segment counts matching
+   * the verse's word count (or a sane multi-word merge, e.g. AbdulBasit's
+   * 1:4 is one 3-word segment) for every test ayah.
+   */
+  quranComRecitationId?: number;
 }
 
 /** Verified against everyayah.com folder naming. */
 export const RECITERS: Reciter[] = [
-  { id: "Husary_128kbps", name: "Mahmoud Khalil Al-Husary" },
-  { id: "Alafasy_128kbps", name: "Mishary Rashid Alafasy" },
-  { id: "Abdul_Basit_Murattal_192kbps", name: "Abdul Basit (Murattal)" },
-  { id: "Minshawy_Murattal_128kbps", name: "Mohamed Siddiq El-Minshawi" },
+  { id: "Husary_128kbps", name: "Mahmoud Khalil Al-Husary", quranComRecitationId: 6 },
+  { id: "Alafasy_128kbps", name: "Mishary Rashid Alafasy", quranComRecitationId: 7 },
+  {
+    id: "Abdul_Basit_Murattal_192kbps",
+    name: "Abdul Basit (Murattal)",
+    quranComRecitationId: 2,
+  },
+  {
+    id: "Minshawy_Murattal_128kbps",
+    name: "Mohamed Siddiq El-Minshawi",
+    quranComRecitationId: 9,
+  },
 ];
 
 export interface Ayah {
@@ -66,6 +88,16 @@ export const SURAHS: Surah[] = [
 /** Path to the same-origin audio proxy for one ayah clip. */
 export function ayahAudioUrl(reciterId: string, surah: number, ayah: number): string {
   return `/api/audio/${encodeURIComponent(reciterId)}/${surah}/${ayah}`;
+}
+
+/** Path to the same-origin proxy for a reciter's Quran.com audio file (word-timed). */
+export function qaudioUrl(reciterId: string, surah: number, ayah: number): string {
+  return `/api/qaudio/${encodeURIComponent(reciterId)}/${surah}/${ayah}`;
+}
+
+/** Path to the same-origin word-segments API for one ayah. */
+export function segmentsUrl(reciterId: string, surah: number, ayah: number): string {
+  return `/api/segments/${encodeURIComponent(reciterId)}/${surah}/${ayah}`;
 }
 
 /** EveryAyah file stem: surah and ayah zero-padded to 3 digits, e.g. 001001. */

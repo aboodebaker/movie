@@ -20,6 +20,26 @@
   transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
+.wordStrip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.1em 0.5em;
+}
+
+.word {
+  display: inline-block;
+  padding: 0.05em 0.2em;
+  border-radius: 6px;
+  border-bottom: 3px solid transparent;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.wordActive {
+  background: rgba(217, 164, 65, 0.22);
+  border-bottom-color: var(--gold);
+}
+
 .arabicCardActive {
   border-color: var(--gold);
   box-shadow: 0 0 0 1px rgba(217, 164, 65, 0.35);
