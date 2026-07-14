@@ -21,7 +21,7 @@ interface TrailPoint {
   cents: number;
 }
 
-interface Colors {
+export interface Colors {
   gold: string;
   green: string;
   red: string;
@@ -30,7 +30,7 @@ interface Colors {
   border: string;
 }
 
-function readColors(): Colors {
+export function readColors(): Colors {
   const style = getComputedStyle(document.documentElement);
   const v = (name: string, fallback: string) => style.getPropertyValue(name).trim() || fallback;
   return {
@@ -43,7 +43,7 @@ function readColors(): Colors {
   };
 }
 
-function hexToRgb(hex: string): [number, number, number] {
+export function hexToRgb(hex: string): [number, number, number] {
   const m = hex.replace("#", "");
   const n = parseInt(m.length === 3 ? m.split("").map((c) => c + c).join("") : m, 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
@@ -75,6 +75,14 @@ export interface PracticeLaneProps {
   /** Bumped by the parent on ayah change / restart to reset cue + trail state. */
   resetSignal: number;
   onCueChange: (cue: CueId) => void;
+  /**
+   * "shadow" (default, unchanged behaviour): target line drawn from `contour`,
+   * cue engine active, stats accumulated into `statsRef`.
+   * "solo": no reference is playing, so there is no target — only the user's
+   * own live trace scrolls on `getPlaybackTimeSec`'s clock. `contour`,
+   * `statsRef` and `onCueChange` are still required props but are ignored.
+   */
+  mode?: "shadow" | "solo";
 }
 
 /**
@@ -92,6 +100,7 @@ export default function PracticeLane({
   statsRef,
   resetSignal,
   onCueChange,
+  mode = "shadow",
 }: PracticeLaneProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const colorsRef = useRef<Colors | null>(null);
@@ -190,69 +199,75 @@ export default function PracticeLane({
       ctx2d.globalAlpha = 1;
 
       // --- target line (reciter's contour projected into the user's range) ---
+      // Shadow-only: solo mode has no reference playing, so there is nothing
+      // to draw a target line against.
       const { times, cents, anchors: reciterAnchors } = contour;
-      const [gr, gg, gb] = hexToRgb(colors.gold);
-      ctx2d.lineCap = "round";
-      for (let i = 0; i < times.length - 1; i++) {
-        const t1 = times[i];
-        const t2 = times[i + 1];
-        if (t2 < tSec - BEHIND_SEC || t1 > tSec + AHEAD_SEC) continue;
-        const c1 = cents[i];
-        const c2 = cents[i + 1];
-        if (c1 === null || c2 === null) continue;
-        // Don't connect across implausible frame-to-frame leaps (octave-error
-        // blips in extraction) — a real voice can't move >300 cents in ~12 ms.
-        if (Math.abs(c2 - c1) > 300) continue;
-        const ahead = (t1 + t2) / 2 >= tSec;
-        ctx2d.strokeStyle = `rgba(${gr}, ${gg}, ${gb}, ${ahead ? 0.95 : 0.35})`;
-        ctx2d.lineWidth = ahead ? 3 : 1.5;
-        ctx2d.beginPath();
-        ctx2d.moveTo(timeToX(t1), centsToY(mapReciterToUser(c1, reciterAnchors, userAnchors)));
-        ctx2d.lineTo(timeToX(t2), centsToY(mapReciterToUser(c2, reciterAnchors, userAnchors)));
-        ctx2d.stroke();
+      if (mode === "shadow") {
+        const [gr, gg, gb] = hexToRgb(colors.gold);
+        ctx2d.lineCap = "round";
+        for (let i = 0; i < times.length - 1; i++) {
+          const t1 = times[i];
+          const t2 = times[i + 1];
+          if (t2 < tSec - BEHIND_SEC || t1 > tSec + AHEAD_SEC) continue;
+          const c1 = cents[i];
+          const c2 = cents[i + 1];
+          if (c1 === null || c2 === null) continue;
+          // Don't connect across implausible frame-to-frame leaps (octave-error
+          // blips in extraction) — a real voice can't move >300 cents in ~12 ms.
+          if (Math.abs(c2 - c1) > 300) continue;
+          const ahead = (t1 + t2) / 2 >= tSec;
+          ctx2d.strokeStyle = `rgba(${gr}, ${gg}, ${gb}, ${ahead ? 0.95 : 0.35})`;
+          ctx2d.lineWidth = ahead ? 3 : 1.5;
+          ctx2d.beginPath();
+          ctx2d.moveTo(timeToX(t1), centsToY(mapReciterToUser(c1, reciterAnchors, userAnchors)));
+          ctx2d.lineTo(timeToX(t2), centsToY(mapReciterToUser(c2, reciterAnchors, userAnchors)));
+          ctx2d.stroke();
+        }
       }
 
-      // --- target at playhead, for cue + dot coloring ---
-      const rawTarget = contourAt(contour, tSec);
+      // --- target at playhead, for cue + dot coloring (shadow only) ---
+      const rawTarget = mode === "shadow" ? contourAt(contour, tSec) : null;
       const targetC = rawTarget !== null ? mapReciterToUser(rawTarget, reciterAnchors, userAnchors) : null;
 
       const playing = isPlayingRef.current;
       const reading = playing ? micReadingRef.current : null;
       const userC = reading?.cents ?? null;
-      const errorCents = userC !== null && targetC !== null ? userC - targetC : null;
+      const errorCents = mode === "shadow" && userC !== null && targetC !== null ? userC - targetC : null;
 
       if (playing) {
         if (userC !== null) {
           trailRef.current.push({ t: tSec, cents: userC });
         }
-        // Lookahead slope over a ~0.5s span, ~0.25-0.75s ahead.
-        const t1 = tSec + 0.25;
-        const t2 = tSec + 0.75;
-        const rc1 = contourAt(contour, t1);
-        const rc2 = contourAt(contour, t2);
-        let targetSlopeAhead: number | null = null;
-        if (rc1 !== null && rc2 !== null) {
-          const p1 = mapReciterToUser(rc1, reciterAnchors, userAnchors);
-          const p2 = mapReciterToUser(rc2, reciterAnchors, userAnchors);
-          targetSlopeAhead = (p2 - p1) / (t2 - t1);
+        if (mode === "shadow") {
+          // Lookahead slope over a ~0.5s span, ~0.25-0.75s ahead.
+          const t1 = tSec + 0.25;
+          const t2 = tSec + 0.75;
+          const rc1 = contourAt(contour, t1);
+          const rc2 = contourAt(contour, t2);
+          let targetSlopeAhead: number | null = null;
+          if (rc1 !== null && rc2 !== null) {
+            const p1 = mapReciterToUser(rc1, reciterAnchors, userAnchors);
+            const p2 = mapReciterToUser(rc2, reciterAnchors, userAnchors);
+            targetSlopeAhead = (p2 - p1) / (t2 - t1);
+          }
+          const newCue = cueEngineRef.current.update({
+            tMs: performance.now(),
+            errorCents,
+            targetSlopeAhead,
+          });
+          if (newCue !== lastCueRef.current) {
+            lastCueRef.current = newCue;
+            onCueChangeRef.current(newCue);
+          }
+          if (errorCents !== null && statsRef.current) {
+            const stats = statsRef.current;
+            stats.frames += 1;
+            const abs = Math.abs(errorCents);
+            if (abs <= 150) stats.within150 += 1;
+            if (abs <= 60) stats.within60 += 1;
+          }
         }
-        const newCue = cueEngineRef.current.update({
-          tMs: performance.now(),
-          errorCents,
-          targetSlopeAhead,
-        });
-        if (newCue !== lastCueRef.current) {
-          lastCueRef.current = newCue;
-          onCueChangeRef.current(newCue);
-        }
-        if (errorCents !== null && statsRef.current) {
-          const stats = statsRef.current;
-          stats.frames += 1;
-          const abs = Math.abs(errorCents);
-          if (abs <= 150) stats.within150 += 1;
-          if (abs <= 60) stats.within60 += 1;
-        }
-      } else if (lastCueRef.current !== null) {
+      } else if (mode === "shadow" && lastCueRef.current !== null) {
         lastCueRef.current = null;
         onCueChangeRef.current(null);
       }
@@ -263,9 +278,12 @@ export default function PracticeLane({
         const age = tSec - p.t;
         if (age < 0) continue;
         const alpha = Math.max(0, 1 - age / TRAIL_MAX_AGE) * 0.8;
-        const raw = contourAt(contour, p.t);
-        const targetAtP = raw !== null ? mapReciterToUser(raw, reciterAnchors, userAnchors) : null;
-        const err = targetAtP !== null ? p.cents - targetAtP : null;
+        let err: number | null = null;
+        if (mode === "shadow") {
+          const raw = contourAt(contour, p.t);
+          const targetAtP = raw !== null ? mapReciterToUser(raw, reciterAnchors, userAnchors) : null;
+          err = targetAtP !== null ? p.cents - targetAtP : null;
+        }
         ctx2d.fillStyle = errorColor(err, colors);
         ctx2d.globalAlpha = alpha;
         ctx2d.beginPath();
@@ -285,7 +303,7 @@ export default function PracticeLane({
 
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [contour, userAnchors, getPlaybackTimeSec, isPlayingRef, micReadingRef, statsRef]);
+  }, [contour, userAnchors, getPlaybackTimeSec, isPlayingRef, micReadingRef, statsRef, mode]);
 
   return <canvas ref={canvasRef} className={styles.canvas} style={{ height: CANVAS_HEIGHT }} />;
 }

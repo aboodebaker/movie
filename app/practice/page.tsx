@@ -9,10 +9,12 @@ import { startMicPitch, type MicPitchTracker, type PitchReading } from "@/lib/au
 import { CUE_TEXT, type CueId } from "@/lib/cues/engine";
 import { loadClip, type ClipData } from "./contourCache";
 import PracticeLane, { type PlaybackStats } from "./PracticeLane";
+import SoloPractice from "./SoloPractice";
 import WordStrip from "./WordStrip";
 import styles from "./practice.module.css";
 
 type ClipStatus = "idle" | "loading" | "ready" | "error";
+type PracticeMode = "shadow" | "solo";
 
 // Treat "resumed at the very end" as a fresh start, not a start() past duration.
 const END_EPSILON_SEC = 0.05;
@@ -28,6 +30,7 @@ export default function PracticePage() {
   const [profile, setProfile] = useState<VoiceProfile | null>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [exploreMode, setExploreMode] = useState(false);
+  const [mode, setMode] = useState<PracticeMode>("shadow");
 
   const [clipStatus, setClipStatus] = useState<ClipStatus>("idle");
   const [clipError, setClipError] = useState<string | null>(null);
@@ -232,6 +235,20 @@ export default function PracticePage() {
     setResetSignal((s) => s + 1);
   }, [hardStop]);
 
+  const handleModeChange = useCallback(
+    (next: PracticeMode) => {
+      setMode((prev) => {
+        if (prev === next) return prev;
+        // Leaving shadow mode: stop any in-flight reference playback + mic,
+        // same as switching ayah. Shadow's own state stays untouched so
+        // flipping back finds it exactly as it was.
+        if (prev === "shadow") hardStop();
+        return next;
+      });
+    },
+    [hardStop],
+  );
+
   const handleVolumeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const v = Number(e.target.value);
     setVolume(v);
@@ -266,9 +283,27 @@ export default function PracticePage() {
     <>
       <h1 style={{ margin: "0.5rem 0" }}>Practice</h1>
       <p className="muted">
-        Shadow the reciter: his contour, projected into your voice, scrolls
-        toward the playhead. Follow the gold line — guidance, never grading.
+        {mode === "shadow"
+          ? "Shadow the reciter: his contour, projected into your voice, scrolls toward the playhead. Follow the gold line — guidance, never grading."
+          : "Solo mode: recite the ayah alone, no reference playing. Afterwards, review how your take lines up against the reciter's melody, word by word."}
       </p>
+
+      <div className={styles.modeToggle} role="group" aria-label="Practice mode">
+        <button
+          type="button"
+          className={mode === "shadow" ? styles.modeButtonActive : styles.modeButton}
+          onClick={() => handleModeChange("shadow")}
+        >
+          Shadow
+        </button>
+        <button
+          type="button"
+          className={mode === "solo" ? styles.modeButtonActive : styles.modeButton}
+          onClick={() => handleModeChange("solo")}
+        >
+          Solo
+        </button>
+      </div>
 
       <div className={`card ${styles.selectionBar}`}>
         <div className={styles.field}>
@@ -396,7 +431,7 @@ export default function PracticePage() {
             </div>
           )}
 
-          {clipStatus === "ready" && clipData && effectiveAnchors && (
+          {clipStatus === "ready" && clipData && effectiveAnchors && mode === "shadow" && (
             <>
               <div className={styles.laneWrapper}>
                 <PracticeLane
@@ -464,6 +499,16 @@ export default function PracticePage() {
                 </div>
               )}
             </>
+          )}
+
+          {clipStatus === "ready" && clipData && effectiveAnchors && mode === "solo" && (
+            <SoloPractice
+              key={`${reciterId}|${surahNumber}|${ayahNumber}`}
+              clipData={clipData}
+              userAnchors={effectiveAnchors}
+              wobble={wobble}
+              onShadowThisAyah={() => handleModeChange("shadow")}
+            />
           )}
         </>
       )}
